@@ -89,7 +89,7 @@ def unbalanced_dataset_generation(df_training, nodes, m):
         df_training.loc[df_training.iloc[:,-1] == x] for x in n
     ]
 
-    # Numero de muestras por nodo para 4 nodos
+    # Numero de muestras por nodo
     m_por_nodo = math.floor(m / nodes)
 
     # Misma distribucion de clases que el dataset original
@@ -103,7 +103,7 @@ def unbalanced_dataset_generation(df_training, nodes, m):
         # generamos una lista con la cantidad de instancias a samplear de cada clase
         df_node_n = pd.DataFrame([])
 
-        r = [random.random() for i in range(1,4)]
+        r = [random.random() for i in range(0, nodes)]
         s = sum(r)
         r = [ i/s for i in r ]
 
@@ -125,10 +125,11 @@ def unbalanced_dataset_generation(df_training, nodes, m):
             
             df_node_n.to_csv('nodo_' + str(i) + '_distributed_unbalanced.csv', sep=',', header=True, index=False)
             df_completo = df_completo.append(df_node_n, ignore_index=True)
-            l_df_nodes.append(df_node_n)
-            print('###########')
-            print(f'Node {i} has been prepared with {df_node_n.shape[0]} instances.')
-            print('###########')
+        
+        l_df_nodes.append(df_node_n)
+        print('###########')
+        print(f'Node {i} has been prepared with {df_node_n.shape[0]} instances.')
+        print('###########')
 
     # Una vez tenemos todos los nodos distribuidos hacemos un append
     # de todos ellos para formar el nodo de training (en este caso desbalanceado)
