@@ -103,11 +103,22 @@ def unbalanced_dataset_generation(df_training, nodes, m):
         # generamos una lista con la cantidad de instancias a samplear de cada clase
         df_node_n = pd.DataFrame([])
 
-        r = [random.random() for i in range(0, nodes)]
-        s = sum(r)
-        r = [ i/s for i in r ]
+        # Repetir seleccion mientras haya 0 muestras para alguna clase en 
+        # la reparticion entre todos los nodos
+        if(i != 0):
+            while(True):
+                r = [random.random() for i in range(0, len(n))]
+                s = sum(r)
+                r = [ i/s for i in r ]
+                r_aux = [math.floor(m_por_nodo*j) for j in r]
+                if(not 0 in r_aux):
+                    print('There are no 0s so it is good distribution!')
+                    print(r_aux)
+                    break
+                print('There are 0s! Need to repeat!')
+                print(r_aux)
 
-        for c, j in zip(l_df, range(0,len(r))):
+        for c, j in zip(l_df, range(0,len(n))):
             print(f'Preparing node {i}...')
             if(i == 0): # If Node 0...
                 l_instances = math.floor(m_por_nodo * (c.shape[0] / df_training.shape[0]))
