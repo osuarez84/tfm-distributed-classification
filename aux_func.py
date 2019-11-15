@@ -8,7 +8,12 @@ import math
 # BALANCED PARTITIONS
 ################################################################################
 def create_balanced_partitions(df_o, partitions, m):
+    print('######################################')
+    print('GENERATING THE BALANCED NODES...')
+    print('######################################')
+
     # Muestreo del dataset original para quedarnos con el sampleado
+    # manteniendo la proporcion de clases original
     sss = StratifiedShuffleSplit(n_splits=1, train_size=m)
 
     for train_index, test_index in sss.split(df_o.iloc[:, 0:-1], df_o.iloc[:, -1]):
@@ -21,7 +26,7 @@ def create_balanced_partitions(df_o, partitions, m):
     # The class should be in the last column
     #df = df_o.copy()
     n = list(df.iloc[:,-1].unique())
-    print(n)
+    print(f'The classes in the dataset are: {n}')
     #n_classes = df.groupby(df.columns[-1]).size().shape[0]
     
     # Extract the observations based on the class 
@@ -37,12 +42,12 @@ def create_balanced_partitions(df_o, partitions, m):
     
     l = [pd.DataFrame([]) for x in range(0, partitions)]
     print(len(l))
-    
+
     for pdf in l_df:
         # Calculate the number of rows we need to extract for each partiton
         # based on the number of rows for each class form the original df
         n_rows = math.floor(pdf.shape[0] / partitions)
-        print(n_rows)
+        print(f'Number of observations for the class: {n_rows}')
         
         # modify each Dataframe adding rows from each class
         # After add those rows, the rows are deleted from the original
@@ -52,7 +57,7 @@ def create_balanced_partitions(df_o, partitions, m):
             pdf = pdf.iloc[n_rows:]
             print(l[i].shape)
                 
-        print(pdf.shape)
+        print(f'Size of the class bucket after repartition to the nodes: {pdf.shape}')
 
     # Convert to a csv files
     df.to_csv('sampled_centralized_balanced.csv', sep=',', header=True, index=False)
@@ -67,67 +72,70 @@ def create_balanced_partitions(df_o, partitions, m):
 ################################################################################
 # Funcion para generar dataset de sample desbalanceado y particiones
 def unbalanced_dataset_generation(df_training, nodes, m):
-  """
-  df_training (DataFrame): dataframe con los datos de training completos
-  nodes (int): numero de nodos 
-  m (int): muestra totales a utilizar del dataset de training completo
-  """
-  # Recibimos el dataset de training completo
-  # Sacamos las clases a DF individuales
-  # Clases unicas
-  n = list(df_training.iloc[:,-1].unique())
+    """
+    df_training (DataFrame): dataframe con los datos de training completos
+    nodes (int): numero de nodos 
+    m (int): muestra totales a utilizar del dataset de training completo
+    """
+    print('######################################')
+    print('GENERATING THE UNBALANCED NODES...')
+    print('######################################')
+    # Recibimos el dataset de training completo
+    # Sacamos las clases a DF individuales
+    # Clases unicas
+    n = list(df_training.iloc[:,-1].unique())
 
-  l_df = [
-    df_training.loc[df_training.iloc[:,-1] == x] for x in n
-  ]
+    l_df = [
+        df_training.loc[df_training.iloc[:,-1] == x] for x in n
+    ]
 
-  # Numero de muestras por nodo para 4 nodos
-  m_por_nodo = math.floor(m / nodes)
+    # Numero de muestras por nodo para 4 nodos
+    m_por_nodo = math.floor(m / nodes)
 
-  # Misma distribucion de clases que el dataset original
-  for c in l_df:
-    print(f'La clase {c.iloc[0,-1]} tiene un porcentaje del {(c.shape[0] / df_training.shape[0]) * 100} dentro del dataset inicial, que son {math.floor(m_por_nodo * (c.shape[0] / df_training.shape[0]))}')
-  
-  l_df_nodes = []
-  df_completo = pd.DataFrame([])
-  # Para cada nodo...
-  for i in range(0,nodes):
-    # generamos una lista con la cantidad de instancias a samplear de cada clase
-    df_node_n = pd.DataFrame([])
-
-    r = [random.random() for i in range(1,4)]
-    s = sum(r)
-    r = [ i/s for i in r ]
-
-    for c, j in zip(l_df, range(0,len(r))):
-      print(f'Preparing node {i}...')
-      if(i == 0): # If Node 0...
-        l_instances = math.floor(m_por_nodo * (c.shape[0] / df_training.shape[0]))
-      else:
-        l_instances = math.floor(m_por_nodo * r[j])
-
-      print(l_instances)
-
-      node_n = c.sample(n=l_instances, replace=False)#, random_state=1)
-      df_node_n = df_node_n.append(node_n, ignore_index=True)
-      index_node_n = node_n.index.values.tolist()
-      print(index_node_n)
-      c = c.drop(index_node_n, axis=0)
-      print(f'Instances added to Node {i} = {l_instances}')
+    # Misma distribucion de clases que el dataset original
+    for c in l_df:
+        print(f'La clase {c.iloc[0,-1]} tiene un porcentaje del {(c.shape[0] / df_training.shape[0]) * 100} dentro del dataset inicial, que son {math.floor(m_por_nodo * (c.shape[0] / df_training.shape[0]))}')
     
-    df_node_n.to_csv('nodo_' + str(i) + '_distributed_unbalanced.csv', sep=',', header=True, index=False)
-    df_completo = df_completo.append(df_node_n, ignore_index=True)
-    l_df_nodes.append(df_node_n)
-    print('###########')
-    print(f'Node {i} has been prepared with {df_node_n.shape[0]} instances.')
-    print('###########')
+    l_df_nodes = []
+    df_completo = pd.DataFrame([])
+    # Para cada nodo...
+    for i in range(0,nodes):
+        # generamos una lista con la cantidad de instancias a samplear de cada clase
+        df_node_n = pd.DataFrame([])
 
-  # Una vez tenemos todos los nodos distribuidos hacemos un append
-  # de todos ellos para formar el nodo de training (en este caso desbalanceado)
-  # lo hacemos asi para facilitar la generacion de los particionados 
-  # (primero creamos particiones, despues las juntamos y creamos el completo)
-  df_completo.to_csv('sampled_centralized_unbalanced.csv', sep=',', header=True, index=False)
-  return l_df_nodes
+        r = [random.random() for i in range(1,4)]
+        s = sum(r)
+        r = [ i/s for i in r ]
+
+        for c, j in zip(l_df, range(0,len(r))):
+            print(f'Preparing node {i}...')
+            if(i == 0): # If Node 0...
+                l_instances = math.floor(m_por_nodo * (c.shape[0] / df_training.shape[0]))
+            else:
+                l_instances = math.floor(m_por_nodo * r[j])
+
+            print(l_instances)
+
+            node_n = c.sample(n=l_instances, replace=False)#, random_state=1)
+            df_node_n = df_node_n.append(node_n, ignore_index=True)
+            index_node_n = node_n.index.values.tolist()
+            print(index_node_n)
+            c = c.drop(index_node_n, axis=0)
+            print(f'Instances added to Node {i} = {l_instances}')
+            
+            df_node_n.to_csv('nodo_' + str(i) + '_distributed_unbalanced.csv', sep=',', header=True, index=False)
+            df_completo = df_completo.append(df_node_n, ignore_index=True)
+            l_df_nodes.append(df_node_n)
+            print('###########')
+            print(f'Node {i} has been prepared with {df_node_n.shape[0]} instances.')
+            print('###########')
+
+    # Una vez tenemos todos los nodos distribuidos hacemos un append
+    # de todos ellos para formar el nodo de training (en este caso desbalanceado)
+    # lo hacemos asi para facilitar la generacion de los particionados 
+    # (primero creamos particiones, despues las juntamos y creamos el completo)
+    df_completo.to_csv('sampled_centralized_unbalanced.csv', sep=',', header=True, index=False)
+    return l_df_nodes
 
 
 ################################################################################
