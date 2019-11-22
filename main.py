@@ -171,11 +171,11 @@ for number_of_nodes in n:
         print(f'Elapsed time in training for balanced partition: {end - start}')
 
         y_pred = classifier.predict(X_test)
-        print(f'The recall for {number_of_nodes} nodes in balanced partitioned \
-            is {recall_score(y_test, y_pred, average="macro")}.')
-        print(f'The precision for {number_of_nodes} nodes in balanced partitioned \
-            is {precision_score(y_test, y_pred, average="macro")}.')
-    
+        print(f'The recall for {number_of_nodes} nodes in balanced partitioned ' \
+            f'is {recall_score(y_test, y_pred, average="macro")}.')
+        print(f'The precision for {number_of_nodes} nodes in balanced partitioned ' \
+            f'is {precision_score(y_test, y_pred, average="macro")}.')
+
 
     ###################################
     # UNBALANCED PARTITIONS
@@ -191,10 +191,10 @@ for number_of_nodes in n:
         print(f'Elapsed time in training for unbalanced partition: {end - start}')
 
         y_pred = classifier.predict(X_test)
-        print(f'The recall for {number_of_nodes} nodes in unbalanced \
-            partitioned is {recall_score(y_test, y_pred, average="macro")}.')
-        print(f'The precision for {number_of_nodes} nodes in unbalanced partitioned \
-            is {precision_score(y_test, y_pred, average="macro")}.')
+        print(f'The recall for {number_of_nodes} nodes in unbalanced '\
+            f'partitioned is {recall_score(y_test, y_pred, average="macro")}.')
+        print(f'The precision for {number_of_nodes} nodes in unbalanced partitioned ' \
+            f'is {precision_score(y_test, y_pred, average="macro")}.')
 
     ############################################################################
     # TRAINING CLASSIFIERS CENTRALIZED DATASETS
@@ -223,10 +223,10 @@ for number_of_nodes in n:
         print(f'Elapsed time in training for balanced centralized: {end - start}')
 
         y_pred = classifier.predict(X_test)
-        print(f'The recall for {number_of_nodes} nodes in balanced centralized \
-            is {recall_score(y_test, y_pred, average="macro")}.')
-        print(f'The precision for {number_of_nodes} nodes in balanced centralized \
-            is {precision_score(y_test, y_pred, average="macro")}.')
+        print(f'The recall for {number_of_nodes} nodes in balanced centralized ' \
+            f'is {recall_score(y_test, y_pred, average="macro")}.')
+        print(f'The precision for {number_of_nodes} nodes in balanced centralized ' \
+            f'is {precision_score(y_test, y_pred, average="macro")}.')
 
     #######################
     # UNBALANCED PARTITIONS
@@ -251,8 +251,8 @@ for number_of_nodes in n:
         print(f'Elapsed time in training for unbalanced centralized: {end - start}')
 
         y_pred = classifier.predict(X_test)
-        print(f'The recall for {number_of_nodes} nodes in unbalanced centralized \
-            is {recall_score(y_test, y_pred, average="macro")}.')
-        print(f'The precision for {number_of_nodes} nodes in unbalanced centralized \
-            is {precision_score(y_test, y_pred, average="macro")}.')
+        print(f'The recall for {number_of_nodes} nodes in unbalanced centralized ' \
+            f'is {recall_score(y_test, y_pred, average="macro")}.')
+        print(f'The precision for {number_of_nodes} nodes in unbalanced centralized ' \
+            f'is {precision_score(y_test, y_pred, average="macro")}.')
 
