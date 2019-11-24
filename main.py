@@ -17,9 +17,9 @@ import time
 # GLOBAL VARIABLES
 ##################
 # List of nodes to test
-n = [2]
+n = [2, 4]
 # Number of samples per node
-m = 10
+m = 200
 
 #########################
 # Setting the classifiers

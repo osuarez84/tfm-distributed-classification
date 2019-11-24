@@ -154,40 +154,38 @@ def unbalanced_dataset_generation(df_training, nodes, m):
 # ENERGY STATISTIC
 ################################################################################
 # Funcion para el computo de la distancia entre dos distribuciones
-def distance_computing(a, b):
-    # Extract the values from each row to compute
-    el = 0
-    for index_a, row_a in a.iterrows():
-        for index_b, row_b in b.iterrows():
-            l2_norm = np.sqrt(np.square(row_a.to_numpy() - row_b.to_numpy()).sum())
-            el += l2_norm
-    d = (1 / (a.shape[0] * b.shape[0])) * el
-    return d
+def distance_computing(a,b):
+  step_5 = 0
+  for index, row in a.iterrows():
+    np_arr = np.full((b.shape[0], b.shape[1]), row.to_numpy())
+    step_1 = np_arr - b.to_numpy()
+    step_2 = np.square(step_1)
+    step_3 = np.sum(step_2, axis=1)
+    step_4 = np.sqrt(step_3)
+    step_5 += np.sum(step_4)
+
+  step_6 = (1 / (a.shape[0] * b.shape[0])) * step_5
+  return step_6
+
+
+
+def distance_computing_b(a,b):
+  np_arr = np.full((b.shape[0], b.shape[1]), a.to_numpy())
+
+  step_1 = np_arr - b.to_numpy()
+  step_2 = np.square(step_1)
+  step_3 = np.sum(step_2, axis=1)
+  step_4 = np.sqrt(step_3)
+  step_5 = np.sum(step_4)
+  step_6 = (1 / b.shape[0]) * step_5
+  return step_6
+
 
 # Calculo entre una observacion y otra observacion
 def distance_computing_c(a, b):
     l2_norm = np.sqrt(np.square(a.values - b.values).sum())
     d = (1 / 1) * l2_norm
     return d
-
-
-# Funcion para el computo de la distancia entre una observacion y un conjunto de datos
-def distance_computing_b(a, b):
-    # a is a row
-    # b is an entire dataset
-    #
-    # Extract the values from each row to compute
-    el = 0
-    for index_b, row_b in b.iterrows():
-        #print(a)
-        #print(row_b)
-        l2_norm = np.sqrt(np.square(a.to_numpy() - row_b.to_numpy()).sum())
-        el += l2_norm
-    d = (1 / (b.shape[0])) * el
-    return d
-
-# La funcion para el computo de la distancia entre dos conjuntos de datos esta
-# especificada en el primer apartado => distance_computing
 
 # Funcion para el computo de la energy statistic entre dos distribuciones
 def energy_statistic_b(row_a, sample_b):
