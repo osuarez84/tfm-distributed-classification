@@ -135,7 +135,8 @@ def unbalanced_dataset_generation(df_training, nodes, m):
             print(f'Instances added to Node {i} = {l_instances}')
             
             df_node_n.to_csv('nodo_' + str(i) + '_distributed_unbalanced.csv', sep=',', header=True, index=False)
-            df_completo = df_completo.append(df_node_n, ignore_index=True)
+        
+        df_completo = df_completo.append(df_node_n, ignore_index=True)
         
         l_df_nodes.append(df_node_n)
         print('###########')
