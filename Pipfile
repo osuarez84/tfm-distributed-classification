@@ -10,6 +10,7 @@ pandas = "*"
 numpy = "*"
 scikit-learn = "*"
 scipy = "*"
+xgboost = "*"
 
 [requires]
 python_version = "3.7"
