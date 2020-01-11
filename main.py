@@ -22,7 +22,7 @@ n = [2, 4, 7, 11]
 # Number of samples per node
 m = 200
 # Number of executions per dataset
-nexec = 20
+nexec = 5
 is_balanced = True
 
 #########################
@@ -74,7 +74,50 @@ l_df_unbalanced_partitioned_nodes = []
 df_centralized_balanced = pd.DataFrame([])
 df_centralized_unbalanced = pd.DataFrame([])
 
+# Preparing the DataFrame with all the info from the experiment
+info_col_names = [
+    'n_nodes',
+    'n_exec',
+    'classifier',
+    'dataset',
+    'recall',
+    'precision',
+    'time_training',
+    'time_energy_distance'
+]
 
+info_col_names_central = [
+    'n_exec',
+    'classifier',
+    'dataset',
+    'recall',
+    'precision',
+    'time_training'
+]
+
+df_exp_info_balanced = pd.DataFrame(
+    [],
+    columns=info_col_names
+)
+
+df_exp_info_central_balanced = pd.DataFrame(
+    [],
+    columns=info_col_names_central
+)
+
+df_exp_info_unbalanced = pd.DataFrame(
+    [],
+    columns=info_col_names
+)
+
+df_exp_info_central_unbalanced = pd.DataFrame(
+    [],
+    columns=info_col_names_central
+)
+
+#########################################
+# BEGINING THE EXPERIMENT
+#########################################
 for n_exec in range(0, nexec):
     print(f'Execution number: {n_exec}.\n')
     # Iterate computation for each number of partitions in the list
@@ -195,6 +238,22 @@ for n_exec in range(0, nexec):
                 print(f'The precision for {number_of_nodes} nodes in balanced partitioned ' \
                     f'is {precision_score(y_test, y_pred, average="macro")}.')
 
+                # Append the info to the DataFrame...
+                df_exp_info_balanced = df_exp_info_balanced.append(
+                    pd.DataFrame([[
+                        number_of_nodes,
+                        n_exec,
+                        name,
+                        'spambase',
+                        recall_score(y_test, y_pred, average="macro"),
+                        precision_score(y_test, y_pred, average="macro"),
+                        (end - start),
+                        end_balanced_energy_distance_computing - start_balanced_enegery_distance_computing
+                    ]],
+                    columns=info_col_names),
+                    ignore_index=True
+                )
+
         ###################################
         # UNBALANCED PARTITIONS
         ###################################
@@ -249,6 +308,20 @@ for n_exec in range(0, nexec):
                 print(f'The precision for {number_of_nodes} nodes in balanced centralized ' \
                     f'is {precision_score(y_test, y_pred, average="macro")}.')
 
+                # Append the info to the DataFrame...
+                df_exp_info_central_balanced = df_exp_info_central_balanced.append(
+                    pd.DataFrame([[
+                        n_exec,
+                        name,
+                        'spambase',
+                        recall_score(y_test, y_pred, average="macro"),
+                        precision_score(y_test, y_pred, average="macro"),
+                        (end - start)
+                    ]],
+                    columns=info_col_names_central),
+                    ignore_index=True
+                )
+
         #######################
         # UNBALANCED PARTITIONS
         #######################
@@ -278,3 +351,10 @@ for n_exec in range(0, nexec):
                 print(f'The precision for {number_of_nodes} nodes in unbalanced centralized ' \
                     f'is {precision_score(y_test, y_pred, average="macro")}.')
 
+
+# End of the experiments
+# Get the .csv file with the experiment info
+print('Getting the .csv data with all the info...')
+df_exp_info_balanced.to_csv('experiment_info_balanced.csv')
+df_exp_info_central_balanced.to_csv('experiment_info_central_balanced.csv')
+print('Experiment finished!')
