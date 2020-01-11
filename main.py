@@ -121,6 +121,18 @@ df_exp_info_central_unbalanced = pd.DataFrame(
 for n_exec in range(0, nexec):
     print(f'Execution number: {n_exec}.\n')
     # Iterate computation for each number of partitions in the list
+
+    # Prepare the datast for the execution
+    # BALANCED DATASET
+    balanced_dataset = create_balanced_dataset(
+        df_original_train,
+        m
+    )
+
+    # UNBALANCED DATASET
+    # TODO
+
+
     for number_of_nodes in n:
         print(f'Preparing experiment for {number_of_nodes} nodes...\n')
         if (is_balanced):
@@ -128,9 +140,8 @@ for n_exec in range(0, nexec):
             # Get list of balanced partitioned nodes
             start_balanced_partition = time.time()
             l_df_balanced_partitioned_nodes = create_balanced_partitions(
-                df_original_train,
-                number_of_nodes,
-                m
+                balanced_dataset,
+                number_of_nodes
             )
             end_balanced_partition = time.time()
             print(f'Elapsed time in balanced partition : \
@@ -274,82 +285,82 @@ for n_exec in range(0, nexec):
                 print(f'The precision for {number_of_nodes} nodes in unbalanced partitioned ' \
                     f'is {precision_score(y_test, y_pred, average="macro")}.')
 
-        ############################################################################
-        # TRAINING CLASSIFIERS CENTRALIZED DATASETS
-        ############################################################################
+    ############################################################################
+    # TRAINING CLASSIFIERS CENTRALIZED DATASETS
+    ############################################################################
 
-        ######################
-        # BALANCED PARTITIONS
-        ######################
-        print('Centralized training...\n')
-        if (is_balanced):
-            X_train_centralized_balanced = pd.read_csv(
-                'sampled_centralized_balanced.csv', 
-                sep=',',
-                header=0
-            ).iloc[:,:-1]
-            
-            y_train_centralized_balanced = pd.read_csv(
-                'sampled_centralized_balanced.csv', 
-                sep=',', 
-                header=0
-            ).iloc[:, -1]
+    ######################
+    # BALANCED PARTITIONS
+    ######################
+    print('Centralized training...\n')
+    if (is_balanced):
+        X_train_centralized_balanced = pd.read_csv(
+            'sampled_centralized_balanced.csv', 
+            sep=',',
+            header=0
+        ).iloc[:,:-1]
+        
+        y_train_centralized_balanced = pd.read_csv(
+            'sampled_centralized_balanced.csv', 
+            sep=',', 
+            header=0
+        ).iloc[:, -1]
 
-            for classifier, name in zip(list_classifiers,list_classifiers_names):
-                print(f'\nThe classifier: {name}\n')
-                start = time.time()
-                classifier.fit(X_train_centralized_balanced.values, y_train_centralized_balanced.values)
-                end = time.time()
-                print(f'Elapsed time in training for balanced centralized: {end - start}')
+        for classifier, name in zip(list_classifiers,list_classifiers_names):
+            print(f'\nThe classifier: {name}\n')
+            start = time.time()
+            classifier.fit(X_train_centralized_balanced.values, y_train_centralized_balanced.values)
+            end = time.time()
+            print(f'Elapsed time in training for balanced centralized: {end - start}')
 
-                y_pred = classifier.predict(X_test.values)
-                print(f'The recall for {number_of_nodes} nodes in balanced centralized ' \
-                    f'is {recall_score(y_test, y_pred, average="macro")}.')
-                print(f'The precision for {number_of_nodes} nodes in balanced centralized ' \
-                    f'is {precision_score(y_test, y_pred, average="macro")}.')
+            y_pred = classifier.predict(X_test.values)
+            print(f'The recall for {number_of_nodes} nodes in balanced centralized ' \
+                f'is {recall_score(y_test, y_pred, average="macro")}.')
+            print(f'The precision for {number_of_nodes} nodes in balanced centralized ' \
+                f'is {precision_score(y_test, y_pred, average="macro")}.')
 
-                # Append the info to the DataFrame...
-                df_exp_info_central_balanced = df_exp_info_central_balanced.append(
-                    pd.DataFrame([[
-                        n_exec,
-                        name,
-                        'spambase',
-                        recall_score(y_test, y_pred, average="macro"),
-                        precision_score(y_test, y_pred, average="macro"),
-                        (end - start)
-                    ]],
-                    columns=info_col_names_central),
-                    ignore_index=True
-                )
+            # Append the info to the DataFrame...
+            df_exp_info_central_balanced = df_exp_info_central_balanced.append(
+                pd.DataFrame([[
+                    n_exec,
+                    name,
+                    'spambase',
+                    recall_score(y_test, y_pred, average="macro"),
+                    precision_score(y_test, y_pred, average="macro"),
+                    (end - start)
+                ]],
+                columns=info_col_names_central),
+                ignore_index=True
+            )
 
-        #######################
-        # UNBALANCED PARTITIONS
-        #######################
-        else:
-            X_train_centralized_unbalanced = pd.read_csv(
-                'sampled_centralized_unbalanced.csv', 
-                sep=',',
-                header=0
-            ).iloc[:, :-1]
+    #######################
+    # UNBALANCED PARTITIONS
+    #######################
+    else:
+        X_train_centralized_unbalanced = pd.read_csv(
+            'sampled_centralized_unbalanced.csv', 
+            sep=',',
+            header=0
+        ).iloc[:, :-1]
 
-            y_train_centralized_unbalanced = pd.read_csv(
-                'sampled_centralized_unbalanced.csv',
-                sep=',',
-                header=0
-            ).iloc[:, -1]
+        y_train_centralized_unbalanced = pd.read_csv(
+            'sampled_centralized_unbalanced.csv',
+            sep=',',
+            header=0
+        ).iloc[:, -1]
 
-            for classifier, name in zip(list_classifiers,list_classifiers_names):
-                print(f'\nThe classifier: {name}\n')
-                start = time.time()
-                classifier.fit(X_train_unbalanced.values, y_train_unbalanced.values)
-                end = time.time()
-                print(f'Elapsed time in training for unbalanced centralized: {end - start}')
+        for classifier, name in zip(list_classifiers,list_classifiers_names):
+            print(f'\nThe classifier: {name}\n')
+            start = time.time()
+            classifier.fit(X_train_unbalanced.values, y_train_unbalanced.values)
+            end = time.time()
+            print(f'Elapsed time in training for unbalanced centralized: {end - start}')
 
-                y_pred = classifier.predict(X_test.values)
-                print(f'The recall for {number_of_nodes} nodes in unbalanced centralized ' \
-                    f'is {recall_score(y_test, y_pred, average="macro")}.')
-                print(f'The precision for {number_of_nodes} nodes in unbalanced centralized ' \
-                    f'is {precision_score(y_test, y_pred, average="macro")}.')
+            y_pred = classifier.predict(X_test.values)
+            print(f'The recall for {number_of_nodes} nodes in unbalanced centralized ' \
+                f'is {recall_score(y_test, y_pred, average="macro")}.')
+            print(f'The precision for {number_of_nodes} nodes in unbalanced centralized ' \
+                f'is {precision_score(y_test, y_pred, average="macro")}.')
 
 
 # End of the experiments

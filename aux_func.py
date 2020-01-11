@@ -7,10 +7,11 @@ import math
 ################################################################################
 # BALANCED PARTITIONS
 ################################################################################
-def create_balanced_partitions(df_o, partitions, m):
-    print('######################################')
-    print('GENERATING THE BALANCED NODES...')
-    print('######################################')
+
+def create_balanced_dataset(df_o, m):
+    print('###########################')
+    print('Generating balanced dataset...')
+    print('###########################')
 
     # Muestreo del dataset original para quedarnos con el sampleado
     # manteniendo la proporcion de clases original
@@ -21,10 +22,17 @@ def create_balanced_partitions(df_o, partitions, m):
         print(df.shape)
         print(df.iloc[:,-1].value_counts(normalize=True) * 100)
 
+    return df
+
+
+def create_balanced_partitions(df, partitions):
+    print('######################################')
+    print('GENERATING THE BALANCED NODES...')
+    print('######################################')
+
     # how many classes
     # IMPORTANT
     # The class should be in the last column
-    #df = df_o.copy()
     n = list(df.iloc[:,-1].unique())
     print(f'The classes in the dataset are: {n}')
     #n_classes = df.groupby(df.columns[-1]).size().shape[0]
@@ -62,8 +70,8 @@ def create_balanced_partitions(df_o, partitions, m):
     # Convert to a csv files
     df.to_csv('sampled_centralized_balanced.csv', sep=',', header=True, index=False)
 
-    for i, df in zip(range(0,m), l):
-      df.to_csv('node_' + str(i) + '_distributed_balanced.csv', sep=',', header=True, index=False)
+    #for i, df in zip(range(0,m), l):
+    #  df.to_csv('node_' + str(i) + '_distributed_balanced.csv', sep=',', header=True, index=False)
     return l
 
 
