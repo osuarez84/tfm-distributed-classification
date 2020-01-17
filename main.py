@@ -22,7 +22,7 @@ n = [2, 4, 7, 11]
 # Number of samples per node
 m = 200
 # Number of executions per dataset
-nexec = 5
+nexec = 20
 is_balanced = True
 
 #########################
@@ -56,6 +56,18 @@ list_classifiers_names = [
 # READING DATASETS
 #####################
 # Reading the dataset
+# TODO
+# introducir una lista de datasets para agilizar los experimentos
+list_datasets = [
+    '../01_datasets/Datasets_Omar/Reales/spambase.data',
+    '../01_datasets/Datasets_Omar/Reales/connect-4Train.csv',
+    '../01_datasets/Datasets_Omar/Reales/covertype.data',
+    '../01_datasets/Datasets_Omar/Reales/HIGGS.csv',
+    '../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv'
+]
+
+
+
 df_original = pd.read_csv('../01_datasets/Datasets_Omar/Reales/spambase.data',
                           sep=',', header=None)
 df_original_train = df_original.sample(frac=0.7)
@@ -294,6 +306,9 @@ for n_exec in range(0, nexec):
     ######################
     print('Centralized training...\n')
     if (is_balanced):
+        # TODO
+        # esto hay que cambiarlo para utilizar el dataset guardado en
+        # el dataframe al principio
         X_train_centralized_balanced = pd.read_csv(
             'sampled_centralized_balanced.csv', 
             sep=',',
