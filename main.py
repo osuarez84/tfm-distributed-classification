@@ -22,14 +22,12 @@ n = [2, 4, 7, 11]
 # Number of samples per node
 m = 200
 # Number of executions per dataset
-nexec = 20
+nexec = 50
 is_balanced = True
 
 #########################
 # Setting the classifiers
 #########################
-# TODO
-# XGBOOST classifier
 clf_rf = RandomForestClassifier()
 clf_svm = svm.SVC(kernel='rbf', gamma='auto')
 clf_lda = LDA()
@@ -59,16 +57,20 @@ list_classifiers_names = [
 # TODO
 # introducir una lista de datasets para agilizar los experimentos
 list_datasets = [
+    # REALES
     '../01_datasets/Datasets_Omar/Reales/spambase.data',
     '../01_datasets/Datasets_Omar/Reales/connect-4Train.csv',
-    '../01_datasets/Datasets_Omar/Reales/covertype.data',
+    '../01_datasets/Datasets_Omar/Reales/covertype.data', # Me da problemas el que tenga tantas clases TODO
     '../01_datasets/Datasets_Omar/Reales/HIGGS.csv',
-    '../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv'
+    '../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv', # Es necesario convertir con one-hot encode TODO
+    # SINTETICOS
+    '../01_datasets/Datasets_Omar/Sinteticos/scenariosimulC2D5G3STDEV0.05.csv',
+    '../01_datasets/Datasets_Omar/Sinteticos/scenariosimulC8D5G3STDEV0.05.csv'
 ]
 
 
 
-df_original = pd.read_csv('../01_datasets/Datasets_Omar/Reales/spambase.data',
+df_original = pd.read_csv('../01_datasets/Datasets_Omar/Sinteticos/scenariosimulC8D5G3STDEV0.05.csv',
                           sep=',', header=None)
 df_original_train = df_original.sample(frac=0.7)
 df_original_test = df_original.drop(df_original_train.index)
