@@ -7,6 +7,7 @@ from sklearn.metrics import recall_score, precision_score
 import xgboost as xgb
 import sys
 import time
+from sklearn.preprocessing import LabelEncoder
 
 # Read the datasets
 # df_original_train = pd.read_csv('../01_datasets/Datasets_Omar/Reales/connect-4Train.csv',
@@ -20,7 +21,7 @@ import time
 # List of nodes to test
 n = [2, 4, 7, 11]
 # Number of samples per node
-m = 200
+m = 500
 # Number of executions per dataset
 nexec = 50
 is_balanced = True
@@ -62,20 +63,62 @@ list_datasets = [
     '../01_datasets/Datasets_Omar/Reales/connect-4Train.csv',
     '../01_datasets/Datasets_Omar/Reales/covertype.data', # Me da problemas el que tenga tantas clases TODO
     '../01_datasets/Datasets_Omar/Reales/HIGGS.csv',
-    '../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv', # Es necesario convertir con one-hot encode TODO
+    #'../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv', # Es necesario convertir con one-hot encode TODO
+    '../01_datasets/Datasets_Omar/Reales/KDDTrain+.txt',
     # SINTETICOS
     '../01_datasets/Datasets_Omar/Sinteticos/scenariosimulC2D5G3STDEV0.05.csv',
     '../01_datasets/Datasets_Omar/Sinteticos/scenariosimulC8D5G3STDEV0.05.csv'
 ]
 
+# Variable to select the dataset
+dataset_name = '../01_datasets/Datasets_Omar/Reales/KDDTrain+.txt'
+DATASET_NAME_INFO = 'kdd'
 
-
-df_original = pd.read_csv('../01_datasets/Datasets_Omar/Sinteticos/scenariosimulC8D5G3STDEV0.05.csv',
+df_original = pd.read_csv(dataset_name,
                           sep=',', header=None)
 df_original_train = df_original.sample(frac=0.7)
 df_original_test = df_original.drop(df_original_train.index)
 df_original_test = df_original_test.sample(n=m)
 print(df_original_test.shape)
+
+
+
+# In the case of KDD Dataset it is neccessary to made one-hot encoding
+if (dataset_name == '../01_datasets/Datasets_Omar/Reales/KDDTrain+.txt'):
+    le = LabelEncoder()
+    # # Protocol Type
+    # le.fit(df_original_train.protocol_type.unique().tolist())
+    # df_original_train['protocol_type'] = le.fit_transform(df_original_train['protocol_type'])
+    # df_original_test['protocol_type'] = le.fit_transform(df_original_test['protocol_type'])
+
+    # # Service
+    # le.fit(df_original_train.service.unique().tolist())
+    # df_original_train['service'] = le.fit_transform(df_original_train['service'])
+    # df_original_test['service'] = le.fit_transform(df_original_test['service'])
+
+    # # Flag
+    # le.fit(df_original_train.flag.unique().tolist())
+    # df_original_train['flag'] = le.fit_transform(df_original_train['flag'])
+    # df_original_test['flag'] = le.fit_transform(df_original_test['flag'])
+
+    # # Class
+    # le.fit(df_original_train.flag.unique().tolist())
+    # df_original_train['class'] = le.fit_transform(df_original_train['class'])
+    # df_original_test['class'] = le.fit_transform(df_original_test['class'])
+
+    df_original_train[1] = le.fit_transform(df_original_train[1])
+    df_original_test[1] = le.fit_transform(df_original_test[1])
+    
+    df_original_train[2] = le.fit_transform(df_original_train[12])
+    df_original_test[2] = le.fit_transform(df_original_test[2])
+
+    df_original_train[3] = le.fit_transform(df_original_train[3])
+    df_original_test[3] = le.fit_transform(df_original_test[3])
+
+    df_original_train[41] = le.fit_transform(df_original_train[41])
+    df_original_test[41] = le.fit_transform(df_original_test[41])
+
+
 
 #print(df_original_train.info())
 #print(df_original_test.info())
@@ -269,7 +312,7 @@ for n_exec in range(0, nexec):
                         number_of_nodes,
                         n_exec,
                         name,
-                        'spambase',
+                        DATASET_NAME_INFO,
                         recall_score(y_test, y_pred, average="macro"),
                         precision_score(y_test, y_pred, average="macro"),
                         (end - start),
@@ -341,7 +384,7 @@ for n_exec in range(0, nexec):
                 pd.DataFrame([[
                     n_exec,
                     name,
-                    'spambase',
+                    DATASET_NAME_INFO,
                     recall_score(y_test, y_pred, average="macro"),
                     precision_score(y_test, y_pred, average="macro"),
                     (end - start)
