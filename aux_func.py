@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import random
 import math
+import operator
 
 ################################################################################
 # BALANCED PARTITIONS
@@ -157,6 +158,106 @@ def unbalanced_dataset_generation(df_training, nodes, m):
     # (primero creamos particiones, despues las juntamos y creamos el completo)
     df_completo.to_csv('sampled_centralized_unbalanced.csv', sep=',', header=True, index=False)
     return l_df_nodes
+
+
+def create_unbalanced_partitions(df, partitions):
+    print('######################################')
+    print('GENERATING THE UNBALANCED NODES...')
+    print('######################################')
+    
+    n = list(df.iloc[:,-1].unique())
+
+    l_df = [
+        df.loc[df.iloc[:,-1] == x] for x in n
+    ]
+
+    l_df_obs = [
+                len(x) for x in l_df
+    ]
+
+    print(f'Observaciones iniciales del dataset: {l_df_obs}')
+    print(df.iloc[:,-1].value_counts())
+
+    l_total_nodes_instances = []
+
+    for i in range(0, partitions):
+        # Cantidad de instancias que restan
+        l_df_node = []
+        remaining_c = 0
+        l_remaining_c = []
+        for j in l_df:
+            remaining_c += len(j)
+            l_remaining_c.append(len(j))
+        print(f'Cantidad de muestras de cada clase que restan: {l_remaining_c}')
+        print(f'Cantidad de muestas totales que restan {remaining_c}')
+
+
+        while (True):
+            list_calc = []
+            if (i == 0):
+                obs =  list(map(lambda x: math.floor(x / partitions), l_df_obs))
+            else:
+                if (partitions == 2):
+                    obs = list(map(lambda x: math.floor(x / partitions), l_df_obs))
+                    break
+                else:
+                    obs = list(map(lambda x: math.floor(x / partitions), l_df_obs))
+                    while(True):
+                        r = [random.random() for i in range(0, len(n))]
+                        s = sum(r)
+                        r = [ i/s for i in r ]
+                        r_aux = [math.floor(sum(obs)*j) for j in r]
+                        if(all((item >= 0.1 and item <= 0.7) for item in r)):
+                            #print('This is perfect!')
+                            #print(r)
+                            #print(r_aux)
+                            obs = r_aux
+                            break
+        
+            # Comprobamos que la seleccion de observaciones computada no supera
+            # las observaciones disponibles para cada clase, daria un error si no
+            list_calc = list(map(operator.sub, l_remaining_c, obs))
+            if (all((item > 0) for item in list_calc)):
+                # Si no las supera todo esta correcto, salimos del bucle para
+                # la siguiente iteracion
+                break
+
+        print(f'Observaciones para nodo {i} = {obs}. Total = {sum(obs)}')  
+        for df_c, df_c_obs in zip(l_df, obs):
+            print(f'Observaciones para clase {df_c.iloc[:,-1].unique()} = {df_c_obs}')
+
+
+        l_df_node = [x.sample(n=y) for x, y in zip(l_df, obs)]
+        
+        l_df = [x.drop(y.index) for x, y in zip(l_df, l_df_node)]
+
+        # Cada elemento de l_total_nodes_instances contiene las muestras de cada nodo
+        l_total_nodes_instances.append(l_df_node)
+        print(len(l_total_nodes_instances))
+
+
+
+    # Convert the list of lists to a list of DataFrames, each DF contain 
+    # all instances of one node.
+    l_df_total_nodes_instances = []
+    for l in l_total_nodes_instances:
+        tmp_df = pd.DataFrame([])
+        for df in l:
+            tmp_df = tmp_df.append(df)
+
+        l_df_total_nodes_instances.append(tmp_df)
+
+    for i in l_df:
+        print(f'Observaciones que quedan sin repartir para la clase {i.iloc[:,-1].unique()} = {len(i)}')
+
+    # Convert to a csv files
+    df.to_csv('sampled_centralized_unbalanced.csv', sep=',', header=True, index=False)
+    
+    # Se devuelve:
+    # l_df_total_nodes_instances (particiones de nodos)
+    # df (nodo centralizado)
+
+    return l_df_total_nodes_instances
 
 
 ################################################################################
