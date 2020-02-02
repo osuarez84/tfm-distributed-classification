@@ -19,11 +19,11 @@ from sklearn.preprocessing import LabelEncoder
 # GLOBAL VARIABLES
 ##################
 # List of nodes to test
-n = [2, 4, 7, 11]
+n = [2, 4]#[2, 4, 7, 11]
 # Number of samples per node
-m = 500
+m = 200
 # Number of executions per dataset
-nexec = 50
+nexec = 1
 is_balanced = True
 
 #########################
@@ -71,8 +71,8 @@ list_datasets = [
 ]
 
 # Variable to select the dataset
-dataset_name = '../01_datasets/Datasets_Omar/Reales/KDDTrain+.txt'
-DATASET_NAME_INFO = 'kdd'
+dataset_name = '../01_datasets/Datasets_Omar/Reales/spambase.data'
+DATASET_NAME_INFO = 'spambase'
 
 df_original = pd.read_csv(dataset_name,
                           sep=',', header=None)
@@ -185,7 +185,7 @@ for n_exec in range(0, nexec):
         df_original_train,
         m
     )
-
+    balanced_dataset.to_csv('first_balanced_dataset.csv', index=False)
     # UNBALANCED DATASET
     # TODO
 
@@ -208,11 +208,18 @@ for n_exec in range(0, nexec):
             print(f'Number of nodes in the balanced list: {len(l_df_balanced_partitioned_nodes)}')
         else:
             print('Unbalanced partition...')
-            l_df_unbalanced_partitioned_nodes = unbalanced_dataset_generation(
-                df_original_train,
-                number_of_nodes,
-                m
+            # l_df_unbalanced_partitioned_nodes = unbalanced_dataset_generation(
+            #     df_original_train,
+            #     number_of_nodes,
+            #     m
+            # )
+            start_unbalanced_partition = time.time()
+            l_df_unbalanced_partitioned_nodes = create_unbalanced_partitions(
+                balanced_dataset,
+                number_of_nodes
             )
+            end_unbalanced_partition = time.time()
+
             print(f'Number of nodes in the unbalanced list: {len(l_df_unbalanced_partitioned_nodes)}')
 
         ############################################################################
@@ -239,6 +246,9 @@ for n_exec in range(0, nexec):
                 
             # Sort the list using the Energy Statistic distance and taking into account all the nodes
             df_dist_balanced_list_all_nodes = df_dist_balanced_list_all_nodes.sort_values(by=['Energy_statistic'], ascending=True)
+
+            df_dist_balanced_list_all_nodes.to_csv('lista_nodos.csv')
+
             print(df_dist_balanced_list_all_nodes.head())
             # Take only the m better observations order by Energy Statistic
             df_training_balanced_all_nodes = df_dist_balanced_list_all_nodes.iloc[:m,:]
@@ -247,6 +257,7 @@ for n_exec in range(0, nexec):
             for i in range(0, number_of_nodes):
                 df_training_distributed_balanced_final_node = df_training_distributed_balanced_final_node.append(l_df_balanced_partitioned_nodes[i].iloc[df_training_balanced_all_nodes[df_training_balanced_all_nodes['Node'] == i].Index], ignore_index=True)
 
+            df_training_distributed_balanced_final_node.to_csv('training_distributed_balanced_final.csv')
             end_balanced_energy_distance_computing = time.time()
             print(f'Elapsed time in computing energy distance in balanced partitions: {end_balanced_energy_distance_computing - start_balanced_enegery_distance_computing}')
 
@@ -254,26 +265,53 @@ for n_exec in range(0, nexec):
         # CASE UNBALANCED
         #################
         else:
+            # Prepare the list with Energy Statistic info
+            col_names = ['Node', 'Index', 'Energy_statistic']
             df_dist_unbalanced_list_all_nodes = pd.DataFrame([], columns=col_names)
+
+            start_unbalanced_enegery_distance_computing = time.time()
+            # Iteramos sobre cada nodo para computar la distancia de cada una
+            # de sus instancias
+            node_counter = 0
             for node in l_df_unbalanced_partitioned_nodes:
                 print('Computing Energy Statistic for unbalanced nodes...')
                 for index, row in node.iterrows():
                     e = energy_statistic_b(row, df_original_test)
                     #print(e)
-                    df_dist_unbalanced_list_all_nodes = df_dist_unbalanced_list_all_nodes.append(pd.DataFrame([[0, index, e]], columns=col_names), ignore_index=True)
-
+                    df_dist_unbalanced_list_all_nodes = df_dist_unbalanced_list_all_nodes.append(pd.DataFrame([[node_counter, index, e]], columns=col_names), ignore_index=True)
+                node_counter += 1
 
             # Sort the list using the Energy Statistic distance and taking into account all the nodes
             df_dist_unbalanced_list_all_nodes = df_dist_unbalanced_list_all_nodes.sort_values(by=['Energy_statistic'], ascending=True)
             print(df_dist_unbalanced_list_all_nodes.head())
-            # Take only the m better observations order by Energy Statistic
-            df_training_unbalanced_all_nodes = df_dist_unbalanced_list_all_nodes.iloc[:m,:]
+            df_dist_unbalanced_list_all_nodes.to_csv('lista_nodos_es_unbalanced.csv', index=False)
+            
+            # Take only the (m / number_of_nodes) better observations order by Energy Statistic
+            df_training_unbalanced_all_nodes = df_dist_unbalanced_list_all_nodes.iloc[:math.floor(m/number_of_nodes),:]
+
+            df_training_unbalanced_all_nodes.to_csv('lista_nodo_best_es_training_unbalanced.csv', index=False)
 
             df_training_distributed_unbalanced_final_node = pd.DataFrame([])
-            for i in range(0, number_of_nodes):
-                df_training_distributed_unbalanced_final_node = df_training_distributed_unbalanced_final_node.append(l_df_balanced_partitioned_nodes[i].iloc[df_training_balanced_all_nodes[df_training_balanced_all_nodes['Node'] == i].Index], ignore_index=True)
 
+            # Recogemos las muestras de cada nodo basandonos en el índice 
+            # y el ranking creado a partir de la distancia distribucional
+            # Esto nos genera nuestro dataset de training => df_training_distributed_unbalanced_final_node
+            node_counter = 0
+            for node in l_df_unbalanced_partitioned_nodes:
+                df_training_distributed_unbalanced_final_node = df_training_distributed_unbalanced_final_node.append(node.loc[df_training_unbalanced_all_nodes[df_training_unbalanced_all_nodes['Node'] == node_counter].Index], ignore_index=True)
+                node_counter += 1
 
+            end_unbalanced_energy_distance_computing = time.time()
+            print(f'Elapsed time in computing energy distance in unbalanced partitions: {end_unbalanced_energy_distance_computing - start_unbalanced_enegery_distance_computing}')
+
+            df_training_distributed_unbalanced_final_node.to_csv('lista_nodo_training_final.csv', index=False)
+
+            # # TESTING
+            # node_counter = 0
+            # for node in l_df_unbalanced_partitioned_nodes:
+            #     node.to_csv('node_unbalanced_' + str(node_counter) + '.csv')
+            #     node_counter += 1
+            # sys.exit(1)
 
         #################################
         # PREPARE TEST DATASET
@@ -328,6 +366,7 @@ for n_exec in range(0, nexec):
         else:
             X_train_unbalanced = df_training_distributed_unbalanced_final_node.iloc[:,:-1]
             y_train_unbalanced = df_training_distributed_unbalanced_final_node.iloc[:, -1]
+            
 
             for classifier, name in zip(list_classifiers,list_classifiers_names):
                 print(f'\nThe classifier: {name}\n')
@@ -341,6 +380,22 @@ for n_exec in range(0, nexec):
                     f'partitioned is {recall_score(y_test, y_pred, average="macro")}.')
                 print(f'The precision for {number_of_nodes} nodes in unbalanced partitioned ' \
                     f'is {precision_score(y_test, y_pred, average="macro")}.')
+
+                                # Append the info to the DataFrame...
+                df_exp_info_unbalanced = df_exp_info_unbalanced.append(
+                    pd.DataFrame([[
+                        number_of_nodes,
+                        n_exec,
+                        name,
+                        DATASET_NAME_INFO,
+                        recall_score(y_test, y_pred, average="macro"),
+                        precision_score(y_test, y_pred, average="macro"),
+                        (end - start),
+                        end_unbalanced_energy_distance_computing - start_unbalanced_enegery_distance_computing
+                    ]],
+                    columns=info_col_names),
+                    ignore_index=True
+                )
 
     ############################################################################
     # TRAINING CLASSIFIERS CENTRALIZED DATASETS
@@ -397,17 +452,22 @@ for n_exec in range(0, nexec):
     # UNBALANCED PARTITIONS
     #######################
     else:
-        X_train_centralized_unbalanced = pd.read_csv(
-            'sampled_centralized_unbalanced.csv', 
-            sep=',',
-            header=0
-        ).iloc[:, :-1]
+        # X_train_centralized_unbalanced = pd.read_csv(
+        #     'sampled_centralized_unbalanced.csv', 
+        #     sep=',',
+        #     header=0
+        # ).iloc[:, :-1]
 
-        y_train_centralized_unbalanced = pd.read_csv(
-            'sampled_centralized_unbalanced.csv',
-            sep=',',
-            header=0
-        ).iloc[:, -1]
+        # y_train_centralized_unbalanced = pd.read_csv(
+        #     'sampled_centralized_unbalanced.csv',
+        #     sep=',',
+        #     header=0
+        # ).iloc[:, -1]
+        
+
+        X_train_centralized_unbalanced = balanced_dataset.iloc[:, :-1]
+        y_train_centralized_unbalanced = balanced_dataset.iloc[:, -1]
+        balanced_dataset.to_csv('balanced_dataset_centralized.csv', index=False)
 
         for classifier, name in zip(list_classifiers,list_classifiers_names):
             print(f'\nThe classifier: {name}\n')
@@ -417,15 +477,34 @@ for n_exec in range(0, nexec):
             print(f'Elapsed time in training for unbalanced centralized: {end - start}')
 
             y_pred = classifier.predict(X_test.values)
-            print(f'The recall for {number_of_nodes} nodes in unbalanced centralized ' \
+            print(f'The recall in unbalanced centralized ' \
                 f'is {recall_score(y_test, y_pred, average="macro")}.')
-            print(f'The precision for {number_of_nodes} nodes in unbalanced centralized ' \
+            print(f'The precision in unbalanced centralized ' \
                 f'is {precision_score(y_test, y_pred, average="macro")}.')
+
+            # Append the info to the DataFrame...
+            df_exp_info_central_unbalanced = df_exp_info_central_unbalanced.append(
+                pd.DataFrame([[
+                    n_exec,
+                    name,
+                    DATASET_NAME_INFO,
+                    recall_score(y_test, y_pred, average="macro"),
+                    precision_score(y_test, y_pred, average="macro"),
+                    (end - start)
+                ]],
+                columns=info_col_names_central),
+                ignore_index=True
+            )
 
 
 # End of the experiments
 # Get the .csv file with the experiment info
 print('Getting the .csv data with all the info...')
-df_exp_info_balanced.to_csv('experiment_info_balanced.csv')
-df_exp_info_central_balanced.to_csv('experiment_info_central_balanced.csv')
+if(is_balanced):
+    df_exp_info_balanced.to_csv('experiment_info_balanced.csv')
+    df_exp_info_central_balanced.to_csv('experiment_info_central_balanced.csv')
+else:
+    df_exp_info_unbalanced.to_csv('experiment_info_unbalanced.csv')
+    df_exp_info_central_unbalanced.to_csv('experiment_info_central_unbalanced.csv')
+
 print('Experiment finished!')
