@@ -55,27 +55,26 @@ list_classifiers_names = [
 # READING DATASETS
 #####################
 # Reading the dataset
-# TODO
 # introducir una lista de datasets para agilizar los experimentos
 list_datasets = [
     # REALES
     '../01_datasets/Datasets_Omar/Reales/spambase.data',
     '../01_datasets/Datasets_Omar/Reales/connect-4Train.csv',
     '../01_datasets/Datasets_Omar/Reales/covertype.data', # Me da problemas el que tenga tantas clases TODO
+    # TODO anadir el dataset que les propuse a las tutoras
     '../01_datasets/Datasets_Omar/Reales/HIGGS.csv',
-    #'../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv', # Es necesario convertir con one-hot encode TODO
-    '../01_datasets/Datasets_Omar/Reales/KDDTrain+.txt',
+    '../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv',
     # SINTETICOS
     '../01_datasets/Datasets_Omar/Sinteticos/scenariosimulC2D5G3STDEV0.05.csv',
     '../01_datasets/Datasets_Omar/Sinteticos/scenariosimulC8D5G3STDEV0.05.csv'
 ]
 
 # Variable to select the dataset
-dataset_name = '../01_datasets/Datasets_Omar/Reales/spambase.data'
+dataset_name = '../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv'
 DATASET_NAME_INFO = 'spambase'
 
 df_original = pd.read_csv(dataset_name,
-                          sep=',', header=None)
+                          sep=',', header=0)
 df_original_train = df_original.sample(frac=0.7)
 df_original_test = df_original.drop(df_original_train.index)
 df_original_test = df_original_test.sample(n=m)
@@ -84,39 +83,31 @@ print(df_original_test.shape)
 
 
 # In the case of KDD Dataset it is neccessary to made one-hot encoding
-if (dataset_name == '../01_datasets/Datasets_Omar/Reales/KDDTrain+.txt'):
+if (dataset_name == '../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv'):
     le = LabelEncoder()
-    # # Protocol Type
-    # le.fit(df_original_train.protocol_type.unique().tolist())
-    # df_original_train['protocol_type'] = le.fit_transform(df_original_train['protocol_type'])
-    # df_original_test['protocol_type'] = le.fit_transform(df_original_test['protocol_type'])
+    # Protocol Type
+    le.fit(df_original_train.protocol_type.unique().tolist())
+    df_original_train['protocol_type'] = le.fit_transform(df_original_train['protocol_type'])
+    df_original_test['protocol_type'] = le.fit_transform(df_original_test['protocol_type'])
 
-    # # Service
-    # le.fit(df_original_train.service.unique().tolist())
-    # df_original_train['service'] = le.fit_transform(df_original_train['service'])
-    # df_original_test['service'] = le.fit_transform(df_original_test['service'])
+    # Service
+    le.fit(df_original_train.service.unique().tolist())
+    df_original_train['service'] = le.fit_transform(df_original_train['service'])
+    df_original_test['service'] = le.fit_transform(df_original_test['service'])
 
-    # # Flag
-    # le.fit(df_original_train.flag.unique().tolist())
-    # df_original_train['flag'] = le.fit_transform(df_original_train['flag'])
-    # df_original_test['flag'] = le.fit_transform(df_original_test['flag'])
+    # Flag
+    le.fit(df_original_train.flag.unique().tolist())
+    df_original_train['flag'] = le.fit_transform(df_original_train['flag'])
+    df_original_test['flag'] = le.fit_transform(df_original_test['flag'])
 
-    # # Class
-    # le.fit(df_original_train.flag.unique().tolist())
-    # df_original_train['class'] = le.fit_transform(df_original_train['class'])
-    # df_original_test['class'] = le.fit_transform(df_original_test['class'])
-
-    df_original_train[1] = le.fit_transform(df_original_train[1])
-    df_original_test[1] = le.fit_transform(df_original_test[1])
-    
-    df_original_train[2] = le.fit_transform(df_original_train[12])
-    df_original_test[2] = le.fit_transform(df_original_test[2])
-
-    df_original_train[3] = le.fit_transform(df_original_train[3])
-    df_original_test[3] = le.fit_transform(df_original_test[3])
-
-    df_original_train[41] = le.fit_transform(df_original_train[41])
-    df_original_test[41] = le.fit_transform(df_original_test[41])
+    # Class
+    # Binarizamos las clases previamente
+    df_original_train['class'] = df_original_train['class'].replace(['u2r', 'dos', 'r2l', 'probe'], 'attack')
+    df_original_test['class'] = df_original_test['class'].replace(['u2r', 'dos', 'r2l', 'probe'], 'attack')
+    # Fiteamos el encoder a las clases ya binarizadas
+    le.fit(df_original_train['class'].unique().tolist())
+    df_original_train['class'] = le.fit_transform(df_original_train['class'])
+    df_original_test['class'] = le.fit_transform(df_original_test['class'])
 
 
 
