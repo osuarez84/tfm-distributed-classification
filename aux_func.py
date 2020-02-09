@@ -5,9 +5,6 @@ import random
 import math
 import operator
 
-################################################################################
-# BALANCED PARTITIONS
-################################################################################
 
 def create_balanced_dataset(df_o, m):
     print('###########################')
@@ -24,6 +21,11 @@ def create_balanced_dataset(df_o, m):
         print(df.iloc[:,-1].value_counts(normalize=True) * 100)
 
     return df
+
+################################################################################
+# BALANCED PARTITIONS
+################################################################################
+
 
 
 def create_balanced_partitions(df, partitions):
@@ -80,184 +82,103 @@ def create_balanced_partitions(df, partitions):
 # UNBALANCED PARTITIONS
 ################################################################################
 # Funcion para generar dataset de sample desbalanceado y particiones
-def unbalanced_dataset_generation(df_training, nodes, m):
-    """
-    df_training (DataFrame): dataframe con los datos de training completos
-    nodes (int): numero de nodos 
-    m (int): muestra totales a utilizar del dataset de training completo
-    """
+
+def create_unbalanced_partitions(df, nodes):
     print('######################################')
     print('GENERATING THE UNBALANCED NODES...')
     print('######################################')
-    # Recibimos el dataset de training completo
-    # Sacamos las clases a DF individuales
-    # Clases unicas
-    n = list(df_training.iloc[:,-1].unique())
-
-    l_df = [
-        df_training.loc[df_training.iloc[:,-1] == x] for x in n
-    ]
-
-    # Numero de muestras por nodo
-    m_por_nodo = math.floor(m / nodes)
-
-    # Misma distribucion de clases que el dataset original
-    for c in l_df:
-        print(f'La clase {c.iloc[0,-1]} tiene un porcentaje del {(c.shape[0] / df_training.shape[0]) * 100} dentro del dataset inicial, que son {math.floor(m_por_nodo * (c.shape[0] / df_training.shape[0]))}')
-    
-    l_df_nodes = []
-    df_completo = pd.DataFrame([])
-    # Para cada nodo...
-    for i in range(0,nodes):
-        # generamos una lista con la cantidad de instancias a samplear de cada clase
-        df_node_n = pd.DataFrame([])
-
-        # Repetir seleccion mientras haya 0 muestras para alguna clase en 
-        # la reparticion entre todos los nodos
-        if(i != 0):
-            while(True):
-                r = [random.random() for i in range(0, len(n))]
-                s = sum(r)
-                r = [ i/s for i in r ]
-                r_aux = [math.floor(m_por_nodo*j) for j in r]
-                if(not 0 in r_aux):
-                    print('There are no 0s so it is good distribution!')
-                    print(r_aux)
-                    break
-                print('There are 0s! Need to repeat!')
-                print(r_aux)
-
-        for c, j in zip(l_df, range(0,len(n))):
-            print(f'Preparing node {i}...')
-            if(i == 0): # If Node 0...
-                l_instances = math.floor(m_por_nodo * (c.shape[0] / df_training.shape[0]))
-            else:
-                l_instances = math.floor(m_por_nodo * r[j])
-
-            print(l_instances)
-
-            node_n = c.sample(n=l_instances, replace=False)#, random_state=1)
-            df_node_n = df_node_n.append(node_n, ignore_index=True)
-            index_node_n = node_n.index.values.tolist()
-            print(index_node_n)
-            c = c.drop(index_node_n, axis=0)
-            print(f'Instances added to Node {i} = {l_instances}')
-            
-            df_node_n.to_csv('nodo_' + str(i) + '_distributed_unbalanced.csv', sep=',', header=True, index=False)
-        
-        df_completo = df_completo.append(df_node_n, ignore_index=True)
-        
-        l_df_nodes.append(df_node_n)
-        print('###########')
-        print(f'Node {i} has been prepared with {df_node_n.shape[0]} instances.')
-        print('###########')
-
-    # Una vez tenemos todos los nodos distribuidos hacemos un append
-    # de todos ellos para formar el nodo de training (en este caso desbalanceado)
-    # lo hacemos asi para facilitar la generacion de los particionados 
-    # (primero creamos particiones, despues las juntamos y creamos el completo)
-    df_completo.to_csv('sampled_centralized_unbalanced.csv', sep=',', header=True, index=False)
-    return l_df_nodes
-
-
-def create_unbalanced_partitions(df, partitions):
-    print('######################################')
-    print('GENERATING THE UNBALANCED NODES...')
-    print('######################################')
-    
     n = list(df.iloc[:,-1].unique())
+    C = len(n)
+    remaining_classes = df.iloc[:,-1]
+    remaining_set = df
 
-    l_df = [
-        df.loc[df.iloc[:,-1] == x] for x in n
-    ]
-
-    l_df_obs = [
-                len(x) for x in l_df
-    ]
-
-    print(f'Observaciones iniciales del dataset: {l_df_obs}')
-    print(df.iloc[:,-1].value_counts())
-
-    l_total_nodes_instances = []
-
-    for i in range(0, partitions):
-        # Cantidad de instancias que restan
-        l_df_node = []
-        remaining_c = 0
-        l_remaining_c = []
-        for j in l_df:
-            remaining_c += len(j)
-            l_remaining_c.append(len(j))
-        print(f'Cantidad de muestras de cada clase que restan: {l_remaining_c}')
-        print(f'Cantidad de muestas totales que restan {remaining_c}')
+    partitions = []
 
 
-        while (True):
-            list_calc = []
-            if (i == 0):
-                obs =  list(map(lambda x: math.floor(x / partitions), l_df_obs))
+    for i in range(1, nodes+1):
+        N = len(remaining_classes)
+        print(f'Remaining classes: {N}')
+
+        P = nodes - i + 1
+        print(f'Partitions: {P}')
+
+        prop = remaining_classes.value_counts() / N
+
+        print(f'Proportions of classes: \n{prop}')
+
+        dev = prop * np.random.uniform(0.1, 1.9, len(n))
+        print(f'Dev: \n{dev}')
+
+        dev = dev / sum(dev)
+        print(f'Normalized proportions: \n{dev}')
+
+        # Some partitions have the same proportion as the original
+        if(i == 1):
+            dev = prop
+
+        print(f'Final proportions for node {i}: \n{dev}')
+
+        observations = pd.Series(list(map(lambda x: math.floor(x), dev.to_numpy() * (N/P))), index=dev.index.tolist())
+        print(f'Observations for node {i}: \n{observations}')
+
+        print('#####################################')
+        print(f'Computing partition for node {i}...')
+        print('#####################################')
+        partition_df = pd.DataFrame([])
+
+        if(i != nodes):
+            for j in n:
+                # Indexes for j class
+                rem = remaining_classes[remaining_classes == j].index.tolist()
+
+                if(rem == 0):
+                    raise Exception(f'Error no elements of class {C}')
+                print(rem)
+
+                nobs = observations[j]
+                print(f'Number of observations for class {j}: \n{nobs}')
+
+                # At least one observation per class
+                if(nobs == 0):
+                    nobs = 1
+
+                nremclass = len(rem)
+                print(f'Number remaining instances for class {j}: {nremclass}')
+
+                nobs = min(nobs, nremclass)
+                print(f'Number of final observations: {nobs}')
+
+                selectedobs = random.sample(rem, nobs)
+                print(f'Selected observations (indexes) from the remaninig: {selectedobs}')
+
+                partition_df = partition_df.append(remaining_set.loc[selectedobs])
+                
+                # Drop the selected observations
+                remaining_classes = remaining_classes.drop(selectedobs)
+                remaining_set = remaining_set.drop(selectedobs)
+                print(f'Remaining instances: {remaining_classes.shape}')
+            
+            print(f'Number of instances for node {i}: {partition_df.shape}')
+            print(f'Remaining instances for each class: \n{remaining_classes.value_counts()}')
+            partitions.append(partition_df)
+            print(f'Partition for node {i}: \n{partitions[i-1].head()}')
+        else:
+            # Check at least one class
+            if(all(n_instances > 0 for n_instances in remaining_classes.value_counts().tolist())):
+                partition_df = partition_df.append(remaining_set)
+                partitions.append(partition_df)
+                print(f'Number of instances for node {i}: {partition_df.shape}')
+                print(f'Classes for node {i}: \n{partition_df.iloc[:,-1].value_counts()}')
             else:
-                if (partitions == 2):
-                    obs = list(map(lambda x: math.floor(x / partitions), l_df_obs))
-                    break
-                else:
-                    obs = list(map(lambda x: math.floor(x / partitions), l_df_obs))
-                    while(True):
-                        r = [random.random() for i in range(0, len(n))]
-                        s = sum(r)
-                        r = [ i/s for i in r ]
-                        r_aux = [math.floor(sum(obs)*j) for j in r]
-                        if(all((item >= 0.1 and item <= 0.7) for item in r)):
-                            #print('This is perfect!')
-                            #print(r)
-                            #print(r_aux)
-                            obs = r_aux
-                            break
-        
-            # Comprobamos que la seleccion de observaciones computada no supera
-            # las observaciones disponibles para cada clase, daria un error si no
-            list_calc = list(map(operator.sub, l_remaining_c, obs))
-            if (all((item > 0) for item in list_calc)):
-                # Si no las supera todo esta correcto, salimos del bucle para
-                # la siguiente iteracion
-                break
-
-        print(f'Observaciones para nodo {i} = {obs}. Total = {sum(obs)}')  
-        for df_c, df_c_obs in zip(l_df, obs):
-            print(f'Observaciones para clase {df_c.iloc[:,-1].unique()} = {df_c_obs}')
+                print(f'Remaining classes for the last node: \n{remaining_classes.value_counts()}')
+                #raise Exception('There are not enough instances of each class for the last node!')
 
 
-        l_df_node = [x.sample(n=y) for x, y in zip(l_df, obs)]
-        
-        l_df = [x.drop(y.index) for x, y in zip(l_df, l_df_node)]
+    print(f'Number of partitions en the list: {len(partitions)}')
+    for i in partitions:
+        print(i.shape) 
+    return partitions  
 
-        # Cada elemento de l_total_nodes_instances contiene las muestras de cada nodo
-        l_total_nodes_instances.append(l_df_node)
-        print(len(l_total_nodes_instances))
-
-
-
-    # Convert the list of lists to a list of DataFrames, each DF contain 
-    # all instances of one node.
-    l_df_total_nodes_instances = []
-    for l in l_total_nodes_instances:
-        tmp_df = pd.DataFrame([])
-        for df in l:
-            tmp_df = tmp_df.append(df)
-
-        l_df_total_nodes_instances.append(tmp_df)
-
-    for i in l_df:
-        print(f'Observaciones que quedan sin repartir para la clase {i.iloc[:,-1].unique()} = {len(i)}')
-
-    # Convert to a csv files
-    df.to_csv('sampled_centralized_unbalanced.csv', sep=',', header=True, index=False)
-    
-    # Se devuelve:
-    # l_df_total_nodes_instances (particiones de nodos)
-    # df (nodo centralizado)
-
-    return l_df_total_nodes_instances
 
 
 ################################################################################
