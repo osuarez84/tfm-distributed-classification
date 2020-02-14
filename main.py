@@ -70,11 +70,11 @@ list_datasets = [
 ]
 
 # Variable to select the dataset
-dataset_name = '../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv'
-DATASET_NAME_INFO = 'kddbin'
+dataset_name = '../01_datasets/Datasets_Omar/Reales/KDDTrain+.txt'
+DATASET_NAME_INFO = 'kdd+'
 
 df_original = pd.read_csv(dataset_name,
-                          sep=',', header=0)
+                          sep=',', header=None)
 df_original_train = df_original.sample(frac=0.7)
 df_original_test = df_original.drop(df_original_train.index)
 df_original_test = df_original_test.sample(n=m)
@@ -109,6 +109,87 @@ if (dataset_name == '../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv'):
     le.fit(df_original_train['class'].unique().tolist())
     df_original_train['class'] = le.fit_transform(df_original_train['class'])
     df_original_test['class'] = le.fit_transform(df_original_test['class'])
+elif (dataset_name == '../01_datasets/Datasets_Omar/Reales/KDDTrain+.txt'):
+    df_original_train = df_original_train.drop(42, axis=1)
+    df_original_test = df_original_test.drop(42, axis=1)
+
+    le = LabelEncoder()
+    # Protocol Type
+    le.fit(df_original_train[1].unique().tolist())
+    df_original_train[1] = le.fit_transform(df_original_train[1])
+    df_original_test[1] = le.fit_transform(df_original_test[1])
+
+    # Service
+    le.fit(df_original_train[2].unique().tolist())
+    df_original_train[2] = le.fit_transform(df_original_train[2])
+    df_original_test[2] = le.fit_transform(df_original_test[2])
+
+    # Flag
+    le.fit(df_original_train[3].unique().tolist())
+    df_original_train[3] = le.fit_transform(df_original_train[3])
+    df_original_test[3] = le.fit_transform(df_original_test[3])
+
+    # Class
+    # Valores nan
+    df_original_test[41] = df_original_test[41].fillna('normal')
+    # Binarizamos las clases previamente
+    df_original_train[41] = df_original_train[41].replace(['neptune',
+                            'warezclient',
+                            'ipsweep',
+                            'portsweep',
+                            'teardrop',
+                            'nmap',
+                            'satan',
+                            'smurf',
+                            'pod',
+                            'back',
+                            'guess_passwd',
+                            'ftp_write',
+                            'multihop',
+                            'rootkit',
+                            'buffer_overflow',
+                            'imap',
+                            'warezmaster',
+                            'phf',
+                            'land',
+                            'loadmodule',
+                            'spy'], 'attack')
+    df_original_test[41] = df_original_test[41].replace(['neptune',
+                            'warezclient',
+                            'ipsweep',
+                            'portsweep',
+                            'teardrop',
+                            'nmap',
+                            'satan',
+                            'smurf',
+                            'pod',
+                            'back',
+                            'guess_passwd',
+                            'ftp_write',
+                            'multihop',
+                            'rootkit',
+                            'buffer_overflow',
+                            'imap',
+                            'warezmaster',
+                            'phf',
+                            'land',
+                            'loadmodule',
+                            'spy'], 'attack')
+    # Fiteamos el encoder a las clases ya binarizadas
+    le.fit(df_original_train[41].unique().tolist())
+    df_original_train[41] = le.fit_transform(df_original_train[41])
+    df_original_test[41] = le.fit_transform(df_original_test[41])
+
+
+print(df_original_train.info())
+print(df_original_train.head())
+
+# Separate test class and predictor variables
+X_test = df_original_test.iloc[:,:-1]
+y_test = df_original_test.iloc[:,-1]
+
+
+
 
 df_original_test.to_csv('final_dataset_test.csv')
 
@@ -185,7 +266,7 @@ for n_exec in range(0, nexec):
             print('Balanced partition...')
             # Get list of balanced partitioned nodes
             start_balanced_partition = time.time()
-            l_df_balanced_partitioned_nodes = create_balanced_partitions(
+            l_df_balanced_partitioned_nodes, l_df_balanced_partitioned_nodes_classes = create_balanced_partitions(
                 balanced_dataset,
                 number_of_nodes
             )
@@ -237,7 +318,7 @@ for n_exec in range(0, nexec):
                 # Iterate over all the rows in the DataFrame of the node
                 print('Computing Energy Statistic for balanced nodes...')
                 for index, row in node.iterrows():
-                    e = energy_statistic_b(row, df_original_test)
+                    e = energy_statistic_b(row, X_test)
                     #print(e)
                     df_dist_node_tmp = df_dist_node_tmp.append(pd.DataFrame([[node_counter, index, e]], columns=col_names), ignore_index=True)
                 l_df_total_energy.append(df_dist_node_tmp)
@@ -250,20 +331,27 @@ for n_exec in range(0, nexec):
             # Iteramos por cada nodo de la lista y recogemos las m / numero_de_nodos 
             # mejores muestras para formar el dataset de training
             df_training_distributed_balanced_final_node = pd.DataFrame([])
+            df_training_distributed_balanced_final_node_classes = pd.Series([])
 
             counter = 0
-            for node_energy, node in zip(l_df_total_energy, l_df_balanced_partitioned_nodes):
+            for node_energy, node, classes in zip(l_df_total_energy, l_df_balanced_partitioned_nodes, l_df_balanced_partitioned_nodes_classes):
                 tmp_df_energy = node_energy.iloc[:math.floor(m/(number_of_nodes**2)), :]
                 tmp_df_energy.to_csv('list_energy_node_' + str(counter) + '.csv' )
                 node.to_csv('node_instances_' + str(counter) + '.csv')
                 df_training_distributed_balanced_final_node =  df_training_distributed_balanced_final_node.append(node.loc[tmp_df_energy['Index']])
+                df_training_distributed_balanced_final_node_classes = df_training_distributed_balanced_final_node_classes.append(classes.loc[tmp_df_energy['Index']])
                 counter += 1
 
-            # print(df_training_distributed_balanced_final_node.shape)
-            # print(df_training_distributed_balanced_final_node.head())
+            print(df_training_distributed_balanced_final_node.shape)
+            print(df_training_distributed_balanced_final_node.head())
             # print(df_training_distributed_balanced_final_node.tail())
 
+            print(df_training_distributed_balanced_final_node_classes.shape)
+            print(df_training_distributed_balanced_final_node_classes.head())
+
+
             df_training_distributed_balanced_final_node.to_csv('training_distributed_balanced_final' + str(number_of_nodes) + '.csv')
+            df_training_distributed_balanced_final_node_classes.to_csv('training_distributed_balanced_final_classes' + str(number_of_nodes) + '.csv')
             end_balanced_energy_distance_computing = time.time()
             print(f'Elapsed time in computing energy distance in balanced partitions: {end_balanced_energy_distance_computing - start_balanced_enegery_distance_computing}')
         #################
@@ -310,23 +398,23 @@ for n_exec in range(0, nexec):
             print(f'Elapsed time in computing energy distance in unbalanced partitions: {end_unbalanced_energy_distance_computing - start_unbalanced_enegery_distance_computing}')
 
             df_training_distributed_unbalanced_final_node.to_csv('lista_nodo_training_final' + str(number_of_nodes) + '.csv', index=False)
-        sys.exit(1)
+
         #################################
         # PREPARE TEST DATASET
         #################################
-        X_test = df_original_test.iloc[:,:-1]
-        y_test = df_original_test.iloc[:, -1]
+        # X_test = df_original_test.iloc[:,:-1]
+        # y_test = df_original_test.iloc[:, -1]
 
         ############################################################################
         # TRAINING CLASSIFIERS DISTRIBUTED DATASETS
         ############################################################################
-
+        
         #################################
         # BALANCED PARTITIONS
         #################################
         if (is_balanced):
-            X_train_balanced = df_training_distributed_balanced_final_node.iloc[:,:-1]
-            y_train_balanced = df_training_distributed_balanced_final_node.iloc[:, -1]
+            X_train_balanced = df_training_distributed_balanced_final_node
+            y_train_balanced = df_training_distributed_balanced_final_node_classes
 
             # Loop over each classifier
             for classifier, name in zip(list_classifiers, list_classifiers_names):

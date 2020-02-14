@@ -4,7 +4,7 @@ import numpy as np
 import random
 import math
 import operator
-
+import sys
 
 def create_balanced_dataset(df_o, m):
     print('###########################')
@@ -75,7 +75,9 @@ def create_balanced_partitions(df, partitions):
 
     #for i, df in zip(range(0,m), l):
     #  df.to_csv('node_' + str(i) + '_distributed_balanced.csv', sep=',', header=True, index=False)
-    return l
+    l_x = [i.iloc[:,:-1] for i in l]
+    l_y = [i.iloc[:,-1] for i in l]
+    return l_x, l_y
 
 
 ################################################################################
