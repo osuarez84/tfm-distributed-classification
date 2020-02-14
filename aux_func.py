@@ -176,10 +176,13 @@ def create_unbalanced_partitions(df, nodes):
                 #raise Exception('There are not enough instances of each class for the last node!')
 
 
-    print(f'Number of partitions en the list: {len(partitions)}')
-    for i in partitions:
+    partitions_X = [i.iloc[:,:-1] for i in partitions]
+    partitions_Y = [i.iloc[:,-1] for i in partitions]
+
+    print(f'Number of partitions en the list: {len(partitions_X)}')
+    for i in partitions_X:
         print(i.shape) 
-    return partitions  
+    return partitions_X, partitions_Y  
 
 
 

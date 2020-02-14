@@ -21,10 +21,10 @@ from sklearn.preprocessing import LabelEncoder
 # List of nodes to test
 n = [2, 4, 7, 11]
 # Number of samples per node
-m = 200
+m = 600
 # Number of executions per dataset
 nexec = 50
-is_balanced = True
+is_balanced = False
 
 #########################
 # Setting the classifiers
@@ -284,7 +284,7 @@ for n_exec in range(0, nexec):
                     time.sleep(0.3) 
                     print('Unbalanced partition...')
                     start_unbalanced_partition = time.time()
-                    l_df_unbalanced_partitioned_nodes = create_unbalanced_partitions(
+                    l_df_unbalanced_partitioned_nodes, l_df_unbalanced_partitioned_nodes_classes = create_unbalanced_partitions(
                         balanced_dataset,
                         number_of_nodes
                     )
@@ -372,7 +372,7 @@ for n_exec in range(0, nexec):
                 df_dist_node_tmp = pd.DataFrame([], columns=col_names)
                 print('Computing Energy Statistic for unbalanced nodes...')
                 for index, row in node.iterrows():
-                    e = energy_statistic_b(row, df_original_test)
+                    e = energy_statistic_b(row, X_test)
                     #print(e)
                     df_dist_node_tmp = df_dist_node_tmp.append(pd.DataFrame([[node_counter, index, e]], columns=col_names), ignore_index=True)
                 l_df_total_energy.append(df_dist_node_tmp)
@@ -385,13 +385,15 @@ for n_exec in range(0, nexec):
             # Iteramos por cada nodo de la lista y recogemos las m / numero_de_nodos 
             # mejores muestras para formar el dataset de training
             df_training_distributed_unbalanced_final_node = pd.DataFrame([])
+            df_training_distributed_unbalanced_final_node_classes = pd.Series([])
 
             #counter = 0
-            for node_energy, node in zip(l_df_total_energy, l_df_unbalanced_partitioned_nodes):
+            for node_energy, node, classes in zip(l_df_total_energy, l_df_unbalanced_partitioned_nodes, l_df_unbalanced_partitioned_nodes_classes):
                 tmp_df_energy = node_energy.iloc[:math.floor(m/(number_of_nodes**2)), :]
                 #tmp_df_energy.to_csv('list_energy_node_' + str(counter) + '.csv' )
                 #node.to_csv('node_instances_' + str(counter) + '.csv')
                 df_training_distributed_unbalanced_final_node =  df_training_distributed_unbalanced_final_node.append(node.loc[tmp_df_energy['Index']])
+                df_training_distributed_unbalanced_final_node_classes = df_training_distributed_unbalanced_final_node_classes.append(classes.loc[tmp_df_energy['Index']])
                 #counter += 1
 
             end_unbalanced_energy_distance_computing = time.time()
@@ -450,8 +452,8 @@ for n_exec in range(0, nexec):
         # UNBALANCED PARTITIONS
         ###################################
         else:
-            X_train_unbalanced = df_training_distributed_unbalanced_final_node.iloc[:,:-1]
-            y_train_unbalanced = df_training_distributed_unbalanced_final_node.iloc[:, -1]
+            X_train_unbalanced = df_training_distributed_unbalanced_final_node
+            y_train_unbalanced = df_training_distributed_unbalanced_final_node_classes
             
 
             for classifier, name in zip(list_classifiers,list_classifiers_names):
