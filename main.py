@@ -23,8 +23,8 @@ n = [2, 4, 7, 11]
 # Number of samples per node
 m = 200
 # Number of executions per dataset
-nexec = 1
-is_balanced = False
+nexec = 50
+is_balanced = True
 
 #########################
 # Setting the classifiers
@@ -58,26 +58,27 @@ list_classifiers_names = [
 # introducir una lista de datasets para agilizar los experimentos
 list_datasets = [
     # REALES
-    '../01_datasets/Datasets_Omar/Reales/spambase.data',
-    '../01_datasets/Datasets_Omar/Reales/connect-4Train.csv',
+    '../01_datasets/Datasets_Omar/Reales/spambase.data', # header = None
+    '../01_datasets/Datasets_Omar/Reales/connect-4Train.csv', # header = None
     '../01_datasets/Datasets_Omar/Reales/covertype.data', # Me da problemas el que tenga tantas clases TODO
     # TODO anadir el dataset que les propuse a las tutoras
-    '../01_datasets/Datasets_Omar/Reales/HIGGS.csv',
-    '../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv',
+    '../01_datasets/Datasets_Omar/Reales/HIGGS.csv', # header = 0
+    '../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv', # header = 0
     # SINTETICOS
-    '../01_datasets/Datasets_Omar/Sinteticos/scenariosimulC2D5G3STDEV0.05.csv',
-    '../01_datasets/Datasets_Omar/Sinteticos/scenariosimulC8D5G3STDEV0.05.csv'
+    '../01_datasets/Datasets_Omar/Sinteticos/scenariosimulC2D5G3STDEV0.05.csv', # header = 0
+    '../01_datasets/Datasets_Omar/Sinteticos/scenariosimulC8D5G3STDEV0.05.csv' # header = 0
 ]
 
 # Variable to select the dataset
 dataset_name = '../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv'
-DATASET_NAME_INFO = 'spambase'
+DATASET_NAME_INFO = 'kddbin'
 
 df_original = pd.read_csv(dataset_name,
                           sep=',', header=0)
 df_original_train = df_original.sample(frac=0.7)
 df_original_test = df_original.drop(df_original_train.index)
 df_original_test = df_original_test.sample(n=m)
+
 print(df_original_test.shape)
 
 
@@ -109,7 +110,7 @@ if (dataset_name == '../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv'):
     df_original_train['class'] = le.fit_transform(df_original_train['class'])
     df_original_test['class'] = le.fit_transform(df_original_test['class'])
 
-
+df_original_test.to_csv('final_dataset_test.csv')
 
 #print(df_original_train.info())
 #print(df_original_test.info())
@@ -195,14 +196,22 @@ for n_exec in range(0, nexec):
             # Get list of unbalanced partitioned nodes
             print(f'Number of nodes in the balanced list: {len(l_df_balanced_partitioned_nodes)}')
         else:
-            print('Unbalanced partition...')
-            start_unbalanced_partition = time.time()
-            l_df_unbalanced_partitioned_nodes = create_unbalanced_partitions(
-                balanced_dataset,
-                number_of_nodes
-            )
-            end_unbalanced_partition = time.time()
-
+            # Try at least 5 times to make the unbalanced partitions
+            max_tries = 5
+            for i in range(max_tries):
+                try:
+                    time.sleep(0.3) 
+                    print('Unbalanced partition...')
+                    start_unbalanced_partition = time.time()
+                    l_df_unbalanced_partitioned_nodes = create_unbalanced_partitions(
+                        balanced_dataset,
+                        number_of_nodes
+                    )
+                    end_unbalanced_partition = time.time()
+                    print(i)
+                    break
+                except Exception:
+                    continue
             print(f'Number of nodes in the unbalanced list: {len(l_df_unbalanced_partitioned_nodes)}')
 
         ############################################################################
@@ -242,19 +251,19 @@ for n_exec in range(0, nexec):
             # mejores muestras para formar el dataset de training
             df_training_distributed_balanced_final_node = pd.DataFrame([])
 
-            #counter = 0
+            counter = 0
             for node_energy, node in zip(l_df_total_energy, l_df_balanced_partitioned_nodes):
                 tmp_df_energy = node_energy.iloc[:math.floor(m/(number_of_nodes**2)), :]
-                #tmp_df_energy.to_csv('list_energy_node_' + str(counter) + '.csv' )
-                #node.to_csv('node_instances_' + str(counter) + '.csv')
+                tmp_df_energy.to_csv('list_energy_node_' + str(counter) + '.csv' )
+                node.to_csv('node_instances_' + str(counter) + '.csv')
                 df_training_distributed_balanced_final_node =  df_training_distributed_balanced_final_node.append(node.loc[tmp_df_energy['Index']])
-                #counter += 1
+                counter += 1
 
             # print(df_training_distributed_balanced_final_node.shape)
             # print(df_training_distributed_balanced_final_node.head())
             # print(df_training_distributed_balanced_final_node.tail())
 
-            #df_training_distributed_balanced_final_node.to_csv('training_distributed_balanced_final' + str(number_of_nodes) + '.csv')
+            df_training_distributed_balanced_final_node.to_csv('training_distributed_balanced_final' + str(number_of_nodes) + '.csv')
             end_balanced_energy_distance_computing = time.time()
             print(f'Elapsed time in computing energy distance in balanced partitions: {end_balanced_energy_distance_computing - start_balanced_enegery_distance_computing}')
         #################
@@ -301,7 +310,7 @@ for n_exec in range(0, nexec):
             print(f'Elapsed time in computing energy distance in unbalanced partitions: {end_unbalanced_energy_distance_computing - start_unbalanced_enegery_distance_computing}')
 
             df_training_distributed_unbalanced_final_node.to_csv('lista_nodo_training_final' + str(number_of_nodes) + '.csv', index=False)
-
+        sys.exit(1)
         #################################
         # PREPARE TEST DATASET
         #################################
@@ -395,21 +404,6 @@ for n_exec in range(0, nexec):
     ######################
     print('Centralized training...\n')
     if (is_balanced):
-        # TODO
-        # esto hay que cambiarlo para utilizar el dataset guardado en
-        # el dataframe al principio
-        # X_train_centralized_balanced = pd.read_csv(
-        #     'sampled_centralized_balanced.csv', 
-        #     sep=',',
-        #     header=0
-        # ).iloc[:,:-1]
-        
-        # y_train_centralized_balanced = pd.read_csv(
-        #     'sampled_centralized_balanced.csv', 
-        #     sep=',', 
-        #     header=0
-        # ).iloc[:, -1]
-
         X_train_centralized_balanced = balanced_dataset.iloc[:, :-1]
         y_train_centralized_balanced = balanced_dataset.iloc[:, -1]
 
@@ -444,19 +438,6 @@ for n_exec in range(0, nexec):
     # UNBALANCED PARTITIONS
     #######################
     else:
-        # X_train_centralized_unbalanced = pd.read_csv(
-        #     'sampled_centralized_unbalanced.csv', 
-        #     sep=',',
-        #     header=0
-        # ).iloc[:, :-1]
-
-        # y_train_centralized_unbalanced = pd.read_csv(
-        #     'sampled_centralized_unbalanced.csv',
-        #     sep=',',
-        #     header=0
-        # ).iloc[:, -1]
-        
-
         X_train_centralized_unbalanced = balanced_dataset.iloc[:, :-1]
         y_train_centralized_unbalanced = balanced_dataset.iloc[:, -1]
         balanced_dataset.to_csv('balanced_dataset_centralized.csv', index=False)
