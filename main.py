@@ -21,10 +21,10 @@ from sklearn.preprocessing import LabelEncoder
 # List of nodes to test
 n = [2, 4, 7, 11]
 # Number of samples per node
-m = 600
+m = 500
 # Number of executions per dataset
 nexec = 50
-is_balanced = False
+is_balanced = True
 
 #########################
 # Setting the classifiers
@@ -61,20 +61,21 @@ list_datasets = [
     '../01_datasets/Datasets_Omar/Reales/spambase.data', # header = None
     '../01_datasets/Datasets_Omar/Reales/connect-4Train.csv', # header = None
     '../01_datasets/Datasets_Omar/Reales/covertype.data', # Me da problemas el que tenga tantas clases TODO
+    '../01_datasets/Datasets_Omar/Reales/Sensorless_drive_diagnosis.txt' # Header None, delim_whitespace=True
     # TODO anadir el dataset que les propuse a las tutoras
-    '../01_datasets/Datasets_Omar/Reales/HIGGS.csv', # header = 0
-    '../01_datasets/Datasets_Omar/Reales/kddtrain5c.csv', # header = 0
+    '../01_datasets/Datasets_Omar/Reales/HIGGS.csv', # header = None
+    '../01_datasets/Datasets_Omar/Reales/KDDTrain+.txt', # header = 0
     # SINTETICOS
     '../01_datasets/Datasets_Omar/Sinteticos/scenariosimulC2D5G3STDEV0.05.csv', # header = 0
     '../01_datasets/Datasets_Omar/Sinteticos/scenariosimulC8D5G3STDEV0.05.csv' # header = 0
 ]
 
 # Variable to select the dataset
-dataset_name = '../01_datasets/Datasets_Omar/Reales/KDDTrain+.txt'
-DATASET_NAME_INFO = 'kdd+'
+dataset_name = '../01_datasets/Datasets_Omar/Reales/spambase.data'
+DATASET_NAME_INFO = 'spambase'
 
 df_original = pd.read_csv(dataset_name,
-                          sep=',', header=None)
+                          sep=',', header=None)#, delim_whitespace=True)
 df_original_train = df_original.sample(frac=0.7)
 df_original_test = df_original.drop(df_original_train.index)
 df_original_test = df_original_test.sample(n=m)
@@ -191,7 +192,7 @@ y_test = df_original_test.iloc[:,-1]
 
 
 
-df_original_test.to_csv('final_dataset_test.csv')
+#df_original_test.to_csv('final_dataset_test.csv')
 
 #print(df_original_train.info())
 #print(df_original_test.info())
@@ -258,7 +259,8 @@ for n_exec in range(0, nexec):
         df_original_train,
         m
     )
-    balanced_dataset.to_csv('first_balanced_dataset.csv', index=False)
+
+    df_training_complex_measures = pd.DataFrame([])
 
     for number_of_nodes in n:
         print(f'Preparing experiment for {number_of_nodes} nodes...\n')
@@ -336,23 +338,29 @@ for n_exec in range(0, nexec):
             counter = 0
             for node_energy, node, classes in zip(l_df_total_energy, l_df_balanced_partitioned_nodes, l_df_balanced_partitioned_nodes_classes):
                 tmp_df_energy = node_energy.iloc[:math.floor(m/(number_of_nodes**2)), :]
-                tmp_df_energy.to_csv('list_energy_node_' + str(counter) + '.csv' )
-                node.to_csv('node_instances_' + str(counter) + '.csv')
+                #tmp_df_energy.to_csv('list_energy_node_' + str(counter) + '.csv' )
+                #node.to_csv('node_instances_' + str(counter) + '.csv')
                 df_training_distributed_balanced_final_node =  df_training_distributed_balanced_final_node.append(node.loc[tmp_df_energy['Index']])
                 df_training_distributed_balanced_final_node_classes = df_training_distributed_balanced_final_node_classes.append(classes.loc[tmp_df_energy['Index']])
                 counter += 1
 
-            print(df_training_distributed_balanced_final_node.shape)
-            print(df_training_distributed_balanced_final_node.head())
+            #print(df_training_distributed_balanced_final_node.shape)
+            #print(df_training_distributed_balanced_final_node.head())
             # print(df_training_distributed_balanced_final_node.tail())
 
-            print(df_training_distributed_balanced_final_node_classes.shape)
-            print(df_training_distributed_balanced_final_node_classes.head())
+            #print(df_training_distributed_balanced_final_node_classes.shape)
+            #print(df_training_distributed_balanced_final_node_classes.head())
 
 
-            df_training_distributed_balanced_final_node.to_csv('training_distributed_balanced_final' + str(number_of_nodes) + '.csv')
-            df_training_distributed_balanced_final_node_classes.to_csv('training_distributed_balanced_final_classes' + str(number_of_nodes) + '.csv')
+            #df_training_distributed_balanced_final_node.to_csv('training_distributed_balanced_final' + str(number_of_nodes) + '.csv')
+            #df_training_distributed_balanced_final_node_classes.to_csv('training_distributed_balanced_final_classes' + str(number_of_nodes) + '.csv')
+            df_tmp = pd.concat([df_training_distributed_balanced_final_node, df_training_distributed_balanced_final_node_classes], axis=1)
+            df_tmp['n_nodes'] = str(number_of_nodes)
+
+            df_training_complex_measures = df_training_complex_measures.append(df_tmp)
+
             end_balanced_energy_distance_computing = time.time()
+
             print(f'Elapsed time in computing energy distance in balanced partitions: {end_balanced_energy_distance_computing - start_balanced_enegery_distance_computing}')
         #################
         # CASE UNBALANCED
@@ -396,10 +404,15 @@ for n_exec in range(0, nexec):
                 df_training_distributed_unbalanced_final_node_classes = df_training_distributed_unbalanced_final_node_classes.append(classes.loc[tmp_df_energy['Index']])
                 #counter += 1
 
+            df_tmp = pd.concat([df_training_distributed_unbalanced_final_node, df_training_distributed_unbalanced_final_node_classes], axis=1)
+            df_tmp['n_nodes'] = str(number_of_nodes)
+
+            df_training_complex_measures = df_training_complex_measures.append(df_tmp)
+
             end_unbalanced_energy_distance_computing = time.time()
             print(f'Elapsed time in computing energy distance in unbalanced partitions: {end_unbalanced_energy_distance_computing - start_unbalanced_enegery_distance_computing}')
 
-            df_training_distributed_unbalanced_final_node.to_csv('lista_nodo_training_final' + str(number_of_nodes) + '.csv', index=False)
+            #df_training_distributed_unbalanced_final_node.to_csv('lista_nodo_training_final' + str(number_of_nodes) + '.csv', index=False)
 
         #################################
         # PREPARE TEST DATASET
@@ -417,6 +430,7 @@ for n_exec in range(0, nexec):
         if (is_balanced):
             X_train_balanced = df_training_distributed_balanced_final_node
             y_train_balanced = df_training_distributed_balanced_final_node_classes
+            print(X_train_balanced.shape)
 
             # Loop over each classifier
             for classifier, name in zip(list_classifiers, list_classifiers_names):
@@ -484,6 +498,33 @@ for n_exec in range(0, nexec):
                     columns=info_col_names),
                     ignore_index=True
                 )
+
+    # Write execution datasets to the .csv file
+    if (is_balanced):
+        df_training_complex_measures.to_csv(
+            'training_distributed_' + DATASET_NAME_INFO + '_balanced_exec_' + str(n_exec) + '.csv',
+            header=None,
+            index=False
+        )
+
+        balanced_dataset.to_csv(
+            'training_centralized_balanced_' + DATASET_NAME_INFO + '_exec_' + str(n_exec) + '.csv',
+            index=False,
+            header=False
+        )
+    else:
+        df_training_complex_measures.to_csv(
+            'training_distributed_' + DATASET_NAME_INFO + '_unbalanced_exec_' + str(n_exec) + '.csv',
+            header=None,
+            index=False
+        )
+
+        balanced_dataset.to_csv(
+            'training_centralized_unbalanced_' + DATASET_NAME_INFO + '_exec_' + str(n_exec) + '.csv',
+            index=False,
+            header=False
+        )
+
 
     ############################################################################
     # TRAINING CLASSIFIERS CENTRALIZED DATASETS
@@ -564,10 +605,10 @@ for n_exec in range(0, nexec):
 # Get the .csv file with the experiment info
 print('Getting the .csv data with all the info...')
 if(is_balanced):
-    df_exp_info_balanced.to_csv('experiment_info_balanced.csv')
-    df_exp_info_central_balanced.to_csv('experiment_info_central_balanced.csv')
+    df_exp_info_balanced.to_csv('experiment_info_balanced_' + DATASET_NAME_INFO + '.csv')
+    df_exp_info_central_balanced.to_csv('experiment_info_central_balanced_' + DATASET_NAME_INFO + '.csv')
 else:
-    df_exp_info_unbalanced.to_csv('experiment_info_unbalanced.csv')
-    df_exp_info_central_unbalanced.to_csv('experiment_info_central_unbalanced.csv')
+    df_exp_info_unbalanced.to_csv('experiment_info_unbalanced_' + DATASET_NAME_INFO + '.csv')
+    df_exp_info_central_unbalanced.to_csv('experiment_info_central_unbalanced_' + DATASET_NAME_INFO + '.csv')
 
 print('Experiment finished!')
